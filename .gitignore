@@ -17,6 +17,5 @@ Thumbs.db
 # Environment variables
 .env
 
-# Database and Model Pickles
+# Database
 *.db
-*.pkl

@@ -19,7 +19,11 @@ import os
 from datetime import datetime
 
 # Path is always relative to THIS file, no matter where the server is run from.
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "disaster_risk.db")
+# If running on Vercel, the directory is read-only, so write to the /tmp directory.
+if "VERCEL" in os.environ or os.environ.get("VERCEL_ENV"):
+    DB_PATH = "/tmp/disaster_risk.db"
+else:
+    DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "disaster_risk.db")
 
 
 # ── connection helper ────────────────────────────────────────────────────────
