@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}History · DisasterAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="page-title mb-0">
+                <i class="fa-solid fa-clock-rotate-left me-2 text-info"></i>
+                Prediction History Logs
+            </h4>
+            <p class="text-secondary small mb-0">
+                A secure audit trail of all disaster models evaluated during your authenticated sessions.
+            </p>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" onclick="confirmClear()">
+            <i class="fa-solid fa-trash me-1"></i> Clear Local DB History
+        </button>
+    </div>
+
+    {# Filters #}
+    <div class="card panel-card mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <label class="fw-semibold text-light mb-0" style="font-size:0.88rem;">Filter Disaster Model:</label>
+                <div class="btn-group" role="group" id="filter-btns">
+                    <button type="button" class="btn btn-sm btn-filter active"
+                            data-type="all" onclick="filterHistory('all', this)">All Hazards</button>
+                    <button type="button" class="btn btn-sm btn-filter"
+                            data-type="flood" onclick="filterHistory('flood', this)">🌊 Flood</button>
+                    <button type="button" class="btn btn-sm btn-filter"
+                            data-type="wildfire" onclick="filterHistory('wildfire', this)">🔥 Wildfire</button>
+                    <button type="button" class="btn btn-sm btn-filter"
+                            data-type="heatwave" onclick="filterHistory('heatwave', this)">☀️ Heatwave</button>
+                </div>
+                <span id="history-count" class="text-secondary small ms-lg-auto"></span>
+            </div>
+        </div>
+    </div>
+
+    {# History table #}
+    <div class="card panel-card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Disaster Type</th>
+                            <th>ML Assessment</th>
+                            <th>Model Confidence</th>
+                            <th>Synced Location</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody">
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary py-4">
+                                <i class="fa-solid fa-spinner fa-spin me-2 text-info"></i>Connecting to SQLite database…
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allPredictions = [];
+let currentFilter  = 'all';
+
+const ICONS = { flood: '🌊', wildfire: '🔥', heatwave: '☀️' };
+const BADGE = {
+    Low:    'badge-risk-low',
+    Medium: 'badge-risk-medium',
+    High:   'badge-risk-high',
+};
+
+async function loadHistory(type = 'all') {
+    const res  = await fetch(`/api/history?type=${type}`);
+    const data = await res.json();
+    if (data.error) { showEmpty('Not logged in.'); return; }
+    allPredictions = data.predictions;
+    renderTable(allPredictions);
+}
+
+function renderTable(rows) {
+    const tbody = document.getElementById('history-tbody');
+    document.getElementById('history-count').textContent =
+        `${rows.length} log entry${rows.length !== 1 ? 'ies' : ''}`;
+
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-secondary py-4">
+            No logged events. Trigger predictions on the
+            <a href="/dashboard" class="text-info">Dashboard</a> to log transactions.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = rows.map((r, i) => {
+        const conf = r.confidence || {};
+        const topConf = Object.entries(conf)
+            .sort((a, b) => b[1] - a[1])
+            .map(([k, v]) => `<span class="${BADGE[k] || ''} px-1 rounded">${k}: ${v}%</span>`)
+            .join(' &nbsp;·&nbsp; ');
+        const dt = new Date(r.created_at + ' UTC');
+        const dtStr = isNaN(dt) ? r.created_at :
+            dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+        return `<tr>
+            <td class="text-secondary small font-monospace">${i + 1}</td>
+            <td class="text-white">${ICONS[r.disaster_type] || ''} <span class="text-capitalize">${r.disaster_type}</span></td>
+            <td><span class="badge ${BADGE[r.risk_level] || 'bg-secondary'}">${r.risk_level} Risk</span></td>
+            <td class="small">${topConf}</td>
+            <td class="text-white small">${r.location_name || 'Manual Input'}</td>
+            <td class="text-secondary small font-monospace">${dtStr}</td>
+        </tr>`;
+    }).join('');
+}
+
+function filterHistory(type, btn) {
+    currentFilter = type;
+    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadHistory(type);
+}
+
+function showEmpty(msg) {
+    document.getElementById('history-tbody').innerHTML =
+        `<tr><td colspan="6" class="text-center text-secondary py-4">${msg}</td></tr>`;
+}
+
+async function confirmClear() {
+    if (!confirm('Delete ALL logged query history? This cannot be undone.')) return;
+    await fetch('/api/history/clear', { method: 'POST' });
+    allPredictions = [];
+    renderTable([]);
+}
+
+loadHistory('all');
+</script>
+{% endblock %}

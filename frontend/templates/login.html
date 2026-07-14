@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Login · DisasterAI{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper d-flex align-items-center justify-content-center">
+    <div class="auth-card card shadow-lg bg-dark text-white border-secondary" style="background: rgba(13, 17, 33, 0.85) !important; backdrop-filter: blur(12px);">
+
+        <div class="auth-header text-center">
+            <div class="auth-icon mb-2">🌍</div>
+            <h3 class="fw-bold mb-0 text-white">Welcome Back</h3>
+            <p class="text-secondary small mb-0">Log in to your DisasterAI account</p>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="mb-3">
+                <label for="email" class="form-label text-light">Email address</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark text-light border-secondary"><i class="fa-solid fa-envelope"></i></span>
+                    <input type="email" class="form-control bg-dark text-white border-secondary" id="email" name="email"
+                           placeholder="you@example.com" required autocomplete="email">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="form-label text-light">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark text-light border-secondary"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" class="form-control bg-dark text-white border-secondary" id="password" name="password"
+                           placeholder="••••••••" required autocomplete="current-password">
+                    <button class="btn btn-outline-secondary border-secondary text-light" type="button"
+                            onclick="togglePassword('password', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-accent w-100 mb-3"
+                    onclick="submitLogin()">
+                <i class="fa-solid fa-right-to-bracket me-2"></i>Log In
+            </button>
+
+            <p class="text-center text-secondary small mb-0">
+                Don't have an account?
+                <a href="{{ url_for('auth.signup') }}" class="link-info fw-semibold">
+                    Sign up free
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePassword(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+    } else {
+        inp.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+    }
+}
+
+function submitLogin() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    if (!email || !password) {
+        alert('Please fill in both fields.'); return;
+    }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("auth.login") }}';
+    [['email', email], ['password', password]].forEach(([n, v]) => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = n; inp.value = v;
+        form.appendChild(inp);
+    });
+    document.body.appendChild(form);
+    form.submit();
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitLogin();
+});
+</script>
+{% endblock %}

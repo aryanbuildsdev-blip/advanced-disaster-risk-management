@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · DisasterAI{% endblock %}
+
+{% block content %}
+
+{# ── Login banner (shown when user is NOT logged in) ── #}
+{% if not user %}
+<div class="alert alert-dark border-secondary mb-0 alert-banner text-light" style="background: rgba(13, 17, 33, 0.95);" role="alert">
+    <div class="container px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span>
+            <i class="fa-solid fa-circle-info me-2 text-info"></i>
+            <strong>Tip:</strong> Predictions can be executed anonymously, but
+            <a href="{{ url_for('auth.login') }}" class="alert-link text-info">logging in</a>
+            saves your query history and lets you view past results.
+        </span>
+        <a href="{{ url_for('auth.signup') }}" class="btn btn-accent btn-sm">Sign Up Free →</a>
+    </div>
+</div>
+{% endif %}
+
+<div class="container-fluid px-4 py-4">
+
+    {# ── Page heading ── #}
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <h4 class="page-title mb-0">
+                <i class="fa-solid fa-circle-radiation me-2 text-info"></i>
+                Risk Analysis Dashboard
+            </h4>
+            <p class="text-secondary small mb-0">
+                Synchronise real-world weather or set coordinates manually, then trigger advanced ML classification and physics-based models.
+            </p>
+        </div>
+        {% if user %}
+        <div class="text-end d-none d-md-block">
+            <span class="badge bg-dark text-success border border-success-subtle px-3 py-2">
+                <i class="fa-solid fa-database me-1"></i> SQLite Sync: ACTIVE
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
+    {# ── Stat cards row (Last prediction per type) ── #}
+    <div class="row g-3 mb-4" id="stat-cards">
+        <div class="col-md-4">
+            <div class="stat-card stat-flood">
+                <div class="stat-icon"><i class="fa-solid fa-water"></i></div>
+                <div class="stat-body">
+                    <div class="stat-label">Flood Risk Status</div>
+                    <div class="stat-value" id="stat-flood">─</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card stat-wildfire">
+                <div class="stat-icon"><i class="fa-solid fa-fire"></i></div>
+                <div class="stat-body">
+                    <div class="stat-label">Wildfire Risk Status</div>
+                    <div class="stat-value" id="stat-wildfire">─</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card stat-heatwave">
+                <div class="stat-icon"><i class="fa-solid fa-sun"></i></div>
+                <div class="stat-body">
+                    <div class="stat-label">Heatwave Risk Status</div>
+                    <div class="stat-value" id="stat-heatwave">─</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Main prediction area ── #}
+    <div class="row g-4">
+
+        {# ── LEFT: Weather Sync + Input form ── #}
+        <div class="col-lg-6">
+            <div class="card panel-card h-100">
+                <div class="card-header panel-header justify-content-between">
+                    <span><i class="fa-solid fa-sliders me-2 text-info"></i> Meteorological Input parameters</span>
+                    <span class="badge bg-dark border border-secondary text-secondary" id="location-name-badge">Manual Input</span>
+                </div>
+                <div class="card-body p-4">
+
+                    {# Live Weather Data Sync Widget #}
+                    <div class="weather-sync-card mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="weather-sync-status" id="weather-sync-status">
+                                <i class="fa-solid fa-satellite-dish fa-fade me-1"></i> Open-Meteo Global Sync
+                            </span>
+                            <button class="btn btn-sm btn-accent" style="font-size:0.75rem; padding: 0.2rem 0.6rem;" onclick="detectUserLocation()" id="detect-loc-btn">
+                                <i class="fa-solid fa-location-crosshairs"></i> Use GPS
+                            </button>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" class="form-control weather-search-input" id="weather-city-input" placeholder="Search location (e.g. Mumbai, London, Paris)...">
+                            <button class="btn btn-accent" type="button" onclick="syncWeatherByCity()" id="city-sync-btn">
+                                <i class="fa-solid fa-rotate"></i> Load Live Weather
+                            </button>
+                        </div>
+                    </div>
+
+                    {# Tab buttons to select disaster type #}
+                    <div class="disaster-tabs mb-4">
+                        <button class="disaster-tab active" id="tab-flood"
+                                onclick="selectDisaster('flood')">
+                            <span class="tab-icon">🌊</span> Flood
+                        </button>
+                        <button class="disaster-tab" id="tab-wildfire"
+                                onclick="selectDisaster('wildfire')">
+                            <span class="tab-icon">🔥</span> Wildfire
+                        </button>
+                        <button class="disaster-tab" id="tab-heatwave"
+                                onclick="selectDisaster('heatwave')">
+                            <span class="tab-icon">☀️</span> Heatwave
+                        </button>
+                    </div>
+
+                    {# ── FLOOD FORM ── #}
+                    <div id="form-flood" class="disaster-form">
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Rainfall (last 24h) <span class="unit">mm</span></label>
+                                <span class="val-badge" id="rainfall_mm_val">80</span>
+                            </div>
+                            <input type="range" class="form-range" id="rainfall_mm"
+                                   min="0" max="400" step="1" value="80"
+                                   oninput="updateVal('rainfall_mm_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Soil Moisture <span class="unit">Scaled to Saturation %</span></label>
+                                <span class="val-badge" id="soil_saturation_val">50</span>
+                            </div>
+                            <input type="range" class="form-range" id="soil_saturation"
+                                   min="0" max="100" step="1" value="50"
+                                   oninput="updateVal('soil_saturation_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>River Discharge Gauging <span class="unit">m</span></label>
+                                <span class="val-badge" id="river_level_m_val">3.0</span>
+                            </div>
+                            <input type="range" class="form-range" id="river_level_m"
+                                   min="0" max="12" step="0.1" value="3.0"
+                                   oninput="updateVal('river_level_m_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Area Elevation <span class="unit">m above sea level</span></label>
+                                <span class="val-badge" id="elevation_m_val">150</span>
+                            </div>
+                            <input type="range" class="form-range" id="elevation_m"
+                                   min="0" max="600" step="5" value="150"
+                                   oninput="updateVal('elevation_m_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Drainage Efficiency <span class="unit">0 = poor, 10 = state-of-the-art</span></label>
+                                <span class="val-badge" id="drainage_quality_val">5</span>
+                            </div>
+                            <input type="range" class="form-range" id="drainage_quality"
+                                   min="0" max="10" step="1" value="5"
+                                   oninput="updateVal('drainage_quality_val', this.value)">
+                        </div>
+                    </div>
+
+                    {# ── WILDFIRE FORM ── #}
+                    <div id="form-wildfire" class="disaster-form d-none">
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Air Temperature <span class="unit">°C</span></label>
+                                <span class="val-badge" id="temperature_c_wf_val">28</span>
+                            </div>
+                            <input type="range" class="form-range" id="temperature_c_wf"
+                                   min="10" max="55" step="0.5" value="28"
+                                   oninput="updateVal('temperature_c_wf_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Relative Humidity <span class="unit">%</span></label>
+                                <span class="val-badge" id="humidity_pct_wf_val">45</span>
+                            </div>
+                            <input type="range" class="form-range" id="humidity_pct_wf"
+                                   min="1" max="100" step="1" value="45"
+                                   oninput="updateVal('humidity_pct_wf_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Wind Velocity <span class="unit">km/h</span></label>
+                                <span class="val-badge" id="wind_speed_kmh_wf_val">20</span>
+                            </div>
+                            <input type="range" class="form-range" id="wind_speed_kmh_wf"
+                                   min="0" max="90" step="1" value="20"
+                                   oninput="updateVal('wind_speed_kmh_wf_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Fuel/Vegetation Dryness <span class="unit">0 = green, 10 = tinder dry</span></label>
+                                <span class="val-badge" id="vegetation_dryness_val">5</span>
+                            </div>
+                            <input type="range" class="form-range" id="vegetation_dryness"
+                                   min="0" max="10" step="0.5" value="5"
+                                   oninput="updateVal('vegetation_dryness_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Rainfall last 7 days <span class="unit">mm</span></label>
+                                <span class="val-badge" id="rainfall_mm_7d_val">20</span>
+                            </div>
+                            <input type="range" class="form-range" id="rainfall_mm_7d"
+                                   min="0" max="150" step="1" value="20"
+                                   oninput="updateVal('rainfall_mm_7d_val', this.value)">
+                        </div>
+                    </div>
+
+                    {# ── HEATWAVE FORM ── #}
+                    <div id="form-heatwave" class="disaster-form d-none">
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Ambient Air Temperature <span class="unit">°C</span></label>
+                                <span class="val-badge" id="temperature_c_hw_val">34</span>
+                            </div>
+                            <input type="range" class="form-range" id="temperature_c_hw"
+                                   min="20" max="55" step="0.5" value="34"
+                                   oninput="updateVal('temperature_c_hw_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Relative Humidity <span class="unit">%</span></label>
+                                <span class="val-badge" id="humidity_pct_hw_val">55</span>
+                            </div>
+                            <input type="range" class="form-range" id="humidity_pct_hw"
+                                   min="1" max="100" step="1" value="55"
+                                   oninput="updateVal('humidity_pct_hw_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Wind Speed <span class="unit">km/h</span></label>
+                                <span class="val-badge" id="wind_speed_kmh_hw_val">10</span>
+                            </div>
+                            <input type="range" class="form-range" id="wind_speed_kmh_hw"
+                                   min="0" max="70" step="1" value="10"
+                                   oninput="updateVal('wind_speed_kmh_hw_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Consecutive Heat Days</label>
+                                <span class="val-badge" id="consecutive_hot_days_val">3</span>
+                            </div>
+                            <input type="range" class="form-range" id="consecutive_hot_days"
+                                   min="0" max="20" step="1" value="3"
+                                   oninput="updateVal('consecutive_hot_days_val', this.value)">
+                        </div>
+                        <div class="slider-group">
+                            <div class="d-flex justify-content-between">
+                                <label>Night/Diurnal Minimum Temp <span class="unit">°C</span></label>
+                                <span class="val-badge" id="night_temperature_c_val">26</span>
+                            </div>
+                            <input type="range" class="form-range" id="night_temperature_c"
+                                   min="15" max="40" step="0.5" value="26"
+                                   oninput="updateVal('night_temperature_c_val', this.value)">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-predict w-100 mt-3" onclick="runPrediction()"
+                            id="predict-btn">
+                        <i class="fa-solid fa-microchip me-2"></i> Compute Prediction & Physics Model
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {# ── RIGHT: Results panel + Physics Simulators ── #}
+        <div class="col-lg-6">
+            <!-- AI Prediction Panel -->
+            <div class="card panel-card mb-4">
+                <div class="card-header panel-header">
+                    <i class="fa-solid fa-brain me-2 text-info"></i> AI ML Classifier Result
+                </div>
+                <div class="card-body p-4">
+
+                    {# Placeholder shown before first prediction #}
+                    <div id="result-placeholder" class="result-placeholder">
+                        <div class="placeholder-icon">🤖</div>
+                        <p class="text-secondary small">
+                            Configure parameters or fetch live weather, then trigger the computation to review neural classification confidence.
+                        </p>
+                    </div>
+
+                    {# Results shown after prediction — hidden by default #}
+                    <div id="result-panel" class="d-none">
+
+                        {# Big risk badge #}
+                        <div class="text-center mb-4">
+                            <div class="risk-badge-wrapper">
+                                <div class="risk-label-sm" id="result-type">FLOOD RISK</div>
+                                <div class="risk-badge" id="result-badge">─</div>
+                                <div class="risk-sub" id="result-sub">─</div>
+                            </div>
+                        </div>
+
+                        {# Confidence chart #}
+                        <h6 class="text-secondary mb-2">
+                            <i class="fa-solid fa-chart-bar me-1 text-info"></i> Neural Net Confidence
+                        </h6>
+                        <div style="position: relative; height: 150px; width: 100%;">
+                            <canvas id="confidenceChart"></canvas>
+                        </div>
+
+                        {# Recommendation #}
+                        <div class="recommendation mt-4" id="recommendation"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Physics-based Simulator Card -->
+            <div class="card panel-card">
+                <div class="card-header panel-header d-flex justify-content-between align-items-center">
+                    <span><i class="fa-solid fa-flask-vial me-2 text-info"></i> Interactive Physics Simulator</span>
+                    <span class="badge bg-dark text-info border border-info-subtle px-2 py-1" style="font-size:0.7rem">First Principles</span>
+                </div>
+                <div class="card-body p-3">
+                    <div class="physics-container">
+                        <canvas id="physicsCanvas" class="physics-canvas"></canvas>
+                        <div class="physics-stats">
+                            <div class="physics-title" id="physics-title">
+                                <span>PHYSICAL ANALYSIS</span>
+                                <span id="physics-type-badge" class="text-info font-monospace">Flood Infiltration Engine</span>
+                            </div>
+                            <div class="row g-2 mt-2" id="physics-readouts">
+                                <!-- JS inserts readouts here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Recent predictions table (only shown when logged in) ── #}
+    {% if user %}
+    <div class="card panel-card mt-4">
+        <div class="card-header panel-header d-flex justify-content-between align-items-center">
+            <span><i class="fa-solid fa-clock-rotate-left me-2 text-info"></i> Database Log: User History</span>
+            <a href="{{ url_for('history') }}" class="btn btn-sm btn-accent" style="font-size:0.8rem">
+                View All Records <i class="fa-solid fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0" id="recent-table">
+                    <thead>
+                        <tr>
+                            <th>Disaster Model</th>
+                            <th>ML Assessment</th>
+                            <th>Synced Location</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-tbody">
+                        <tr><td colspan="4" class="text-center text-secondary py-3">
+                            <i class="fa-solid fa-spinner fa-spin me-2 text-info"></i> Reading database...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Sign Up · DisasterAI{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper d-flex align-items-center justify-content-center">
+    <div class="auth-card card shadow-lg bg-dark text-white border-secondary" style="background: rgba(13, 17, 33, 0.85) !important; backdrop-filter: blur(12px);">
+
+        <div class="auth-header text-center">
+            <div class="auth-icon mb-2">🌍</div>
+            <h3 class="fw-bold mb-0 text-white">Create Account</h3>
+            <p class="text-secondary small mb-0">Join DisasterAI — free forever</p>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="mb-3">
+                <label for="username" class="form-label text-light">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark text-light border-secondary"><i class="fa-solid fa-user"></i></span>
+                    <input type="text" class="form-control bg-dark text-white border-secondary" id="username" name="username"
+                           placeholder="e.g. aryan_2025" required
+                           value="{{ username if username else '' }}">
+                </div>
+                <div class="form-text text-secondary">At least 3 characters.</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label text-light">Email address</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark text-light border-secondary"><i class="fa-solid fa-envelope"></i></span>
+                    <input type="email" class="form-control bg-dark text-white border-secondary" id="email" name="email"
+                           placeholder="you@example.com" required
+                           value="{{ email if email else '' }}">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label text-light">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark text-light border-secondary"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" class="form-control bg-dark text-white border-secondary" id="password" name="password"
+                           placeholder="At least 6 characters" required>
+                    <button class="btn btn-outline-secondary border-secondary text-light" type="button"
+                            onclick="togglePassword('password', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="password2" class="form-label text-light">Confirm Password</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark text-light border-secondary"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" class="form-control bg-dark text-white border-secondary" id="password2" name="password2"
+                           placeholder="Repeat your password" required>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-accent w-100 mb-3"
+                    onclick="submitSignup()">
+                <i class="fa-solid fa-user-plus me-2"></i>Create Account
+            </button>
+
+            <p class="text-center text-secondary small mb-0">
+                Already have an account?
+                <a href="{{ url_for('auth.login') }}" class="link-info fw-semibold">Log in</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePassword(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    icon.className = inp.type === 'password' ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+}
+
+function submitSignup() {
+    const username  = document.getElementById('username').value.trim();
+    const email     = document.getElementById('email').value.trim();
+    const password  = document.getElementById('password').value;
+    const password2 = document.getElementById('password2').value;
+
+    if (!username || !email || !password || !password2) {
+        alert('Please fill in all fields.'); return;
+    }
+    if (password !== password2) {
+        alert('Passwords do not match.'); return;
+    }
+    if (password.length < 6) {
+        alert('Password must be at least 6 characters.'); return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("auth.signup") }}';
+    [['username', username], ['email', email],
+     ['password', password], ['password2', password2]].forEach(([n, v]) => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = n; inp.value = v;
+        form.appendChild(inp);
+    });
+    document.body.appendChild(form);
+    form.submit();
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitSignup();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Risk Map · DisasterAI{% endblock %}
+
+{% block extra_head %}
+<style>
+  #map { height: calc(100vh - 220px); min-height: 480px; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  #loading-overlay {
+    position: absolute; inset: 0; background: rgba(6, 9, 19, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 16px; z-index: 9999; font-size: 1.15rem; font-weight: 700;
+    color: #fff;
+    border: 1px solid var(--border-color);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="page-title mb-0">
+                <i class="fa-solid fa-earth-asia me-2 text-info"></i>
+                Interactive Risk Map
+            </h4>
+            <p class="text-secondary small mb-0">
+                Monitor global risks in real-time. Click <strong>any location on the map</strong> to drop a pin, pull real-world coordinates from Open-Meteo, and compute instant predictions.
+            </p>
+        </div>
+    </div>
+
+    <div class="map-controls mb-4 d-flex flex-wrap gap-3 align-items-center p-3">
+        <div class="d-flex align-items-center gap-2">
+            <label class="fw-semibold text-light mb-0" style="font-size:0.88rem;">Disaster Target Model:</label>
+            <select class="form-select form-select-sm bg-dark text-white border-secondary" id="map-disaster-type"
+                    style="width:auto" onchange="updateMap()">
+                <option value="flood">🌊 Flood Risk</option>
+                <option value="wildfire">🔥 Wildfire Risk</option>
+                <option value="heatwave">☀️ Heatwave Risk</option>
+            </select>
+        </div>
+        <button class="btn btn-sm btn-accent" onclick="updateMap()">
+            <i class="fa-solid fa-rotate me-1"></i> Refresh City Predictions
+        </button>
+        <span id="map-status" class="text-secondary small ms-lg-2"></span>
+    </div>
+
+    <div class="position-relative">
+        <div id="map"></div>
+        <div id="loading-overlay">
+            <span>
+                <i class="fa-solid fa-satellite fa-spin me-2 text-info"></i> Interrogating satellites...
+            </span>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}

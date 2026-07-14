@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Welcome to DisasterAI · Next-Gen Risk Platform{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    {# Hero Header #}
+    <div class="text-center mb-5 py-4">
+        <h1 class="display-4 fw-bold text-white mb-3" style="letter-spacing: -1px; text-shadow: 0 0 20px rgba(0, 240, 255, 0.2);">
+            Next-Gen Multi-Disaster Risk Assessment
+        </h1>
+        <p class="lead text-secondary mx-auto" style="max-width: 720px; font-size: 1.15rem;">
+            A hybrid framework combining **Random Forest Machine Learning** classification with real-time **WebGL 3D Physical Simulations** to analyze and visualize environmental hazards.
+        </p>
+        
+        <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+            {% if user %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-accent px-4 py-2 fs-6">
+                    <i class="fa-solid fa-gauge-high me-2"></i>Enter Dashboard
+                </a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-accent px-4 py-2 fs-6">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i>Log In to Continue
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary text-light px-4 py-2 fs-6">
+                    Explore as Guest (No History)
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── Key Modules ── #}
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card panel-card h-100 p-4 text-center" style="background: linear-gradient(135deg, rgba(0, 240, 255, 0.05) 0%, rgba(13, 17, 33, 0.8) 100%);">
+                <div class="fs-1 mb-3">🌊</div>
+                <h5 class="text-white fw-bold">Flood Hydrology</h5>
+                <p class="text-secondary small mb-0">
+                    Runs Green-Ampt infiltration and surface runoff equations in a 3D valley landscape to simulate watershed pooling based on rainfall, soil moisture, and elevations.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card panel-card h-100 p-4 text-center" style="background: linear-gradient(135deg, rgba(255, 123, 0, 0.05) 0%, rgba(13, 17, 33, 0.8) 100%);">
+                <div class="fs-1 mb-3">🔥</div>
+                <h5 class="text-white fw-bold">Wildfire Combustion</h5>
+                <p class="text-secondary small mb-0">
+                    Propagates wildfire fronts across a 3D voxel grid forest using Rothermel spread speed formulas, fully responsive to temperature, humidity, dryness, and wind.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card panel-card h-100 p-4 text-center" style="background: linear-gradient(135deg, rgba(255, 42, 95, 0.05) 0%, rgba(13, 17, 33, 0.8) 100%);">
+                <div class="fs-1 mb-3">☀️</div>
+                <h5 class="text-white fw-bold">Heatwave Thermodynamics</h5>
+                <p class="text-secondary small mb-0">
+                    Estimates apparent heat index and Wet Bulb Globe Temperature (WBGT). Animates heat stress and sweat evaporation channels on a 3D anatomical silhouette.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {# ── Advanced Features Block ── #}
+    <div class="card panel-card mb-5">
+        <div class="card-header panel-header">
+            <i class="fa-solid fa-atom me-2 text-info"></i> How It Works & Core System Features
+        </div>
+        <div class="card-body p-4 text-light">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h6 class="text-white fw-semibold mb-3"><i class="fa-solid fa-brain text-info me-2"></i> Artificial Intelligence</h6>
+                    <p class="small text-secondary">
+                        The platform operates three custom-trained **Random Forest Classifiers** with high parameter stratifications. They evaluate live coordinates to output risk categories and neural classification probability.
+                    </p>
+                    <h6 class="text-white fw-semibold mb-3"><i class="fa-solid fa-satellite-dish text-info me-2"></i> Real-World Weather Sync</h6>
+                    <p class="small text-secondary">
+                        Powered by **Open-Meteo’s telemetry API**, clicking points on the global map or searching cities fetches live meteorological variables (precipitation, humidity, wind, and soil moisture) automatically.
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-white fw-semibold mb-3"><i class="fa-solid fa-cubes text-info me-2"></i> WebGL 3D Orbit Simulations</h6>
+                    <p class="small text-secondary">
+                        Instead of flat graphics, the physics models render within a **Three.js** canvas. You can click and drag to orbit in 3D, scroll to zoom, and right-click to pan around the simulation grids.
+                    </p>
+                    <h6 class="text-white fw-semibold mb-3"><i class="fa-solid fa-database text-info me-2"></i> History & Auditing</h6>
+                    <p class="small text-secondary">
+                        Creating an account and logging in activates secure, automated **SQLite database logging**. This saves your prediction queries and tracks environmental telemetry for your audits.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── CTA Logging Box ── #}
+    <div class="card panel-card p-5 text-center" style="background: linear-gradient(135deg, rgba(13, 17, 33, 0.95) 0%, rgba(6, 9, 19, 0.98) 100%); border-color: rgba(0, 240, 255, 0.15);">
+        <h4 class="text-white fw-bold mb-3">Begin Risk Simulation</h4>
+        <p class="text-secondary small mx-auto mb-4" style="max-width: 500px;">
+            Log in to log risk assessments, build a telemetry history ledger, and audit regional environmental parameters.
+        </p>
+        
+        <div class="d-flex justify-content-center gap-3 align-items-center flex-wrap">
+            {% if not user %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-accent px-4 py-2">
+                    <i class="fa-solid fa-right-to-bracket me-1"></i> Log In to Account
+                </a>
+                <a href="{{ url_for('auth.signup') }}" class="btn btn-outline-secondary text-light px-4 py-2">
+                    Create Account Free
+                </a>
+            {% else %}
+                <span class="text-success"><i class="fa-solid fa-circle-check"></i> Already Logged In as <strong>{{ user.username }}</strong></span>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-accent px-4 py-2">Go to Dashboard</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
